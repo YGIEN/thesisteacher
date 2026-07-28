@@ -15,7 +15,6 @@ export async function POST(request) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    // Check file type
     if (file.type !== "application/pdf") {
       return NextResponse.json(
         { error: "File must be a PDF" },
@@ -23,21 +22,46 @@ export async function POST(request) {
       );
     }
 
-    // Convert file to buffer
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    // Dynamic import for pdf-parse (ESM compatibility)
-    const pdfParse = (await import("pdf-parse")).default;
-    const data = await pdfParse(buffer);
+    // pdf-parse v2 uses PDFParse class
+    const { PDFParse } = await import("pdf-parse");
+    const pdf = new PDFParse(buffer);
+
+    // Get text from all pages
+    let fullText = "";
+    const totalPages = pdf.getPageLength();
+
+    for (let i = 1; i <= totalPages; i++) {
+      const page = pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const lines = textContent.items.map((item) => item.str || "");
+      fullText += lines.join(" ") + "\n\n";
+    }
+
+    const text = fullText.trim();
+
+    if (!text || text.length < 20) {
+      return NextResponse.json(
+        {
+          error:
+            "Could not extract text from this PDF. It may be scanned or image-based. Try pasting the text directly instead.",
+        },
+        { status: 400 }
+      );
+    }
 
     return NextResponse.json({
-      text: data.text,
-      pages: data.numpages,
+      text,
+      pages: totalPages,
     });
   } catch (error) {
     console.error("PDF extraction error:", error);
     return NextResponse.json(
-      { error: "Failed to extract text from PDF" },
+      {
+        error:
+          "Failed to extract text from PDF. Try pasting the text directly instead.",
+      },
       { status: 500 }
     );
   }
