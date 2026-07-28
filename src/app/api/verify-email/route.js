@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import User from "@/lib/models/user";
-import VerificationToken from "@/lib/models/verificationToken";
+import PendingUser from "@/lib/models/pendingUser";
 
 export async function GET(request) {
   try {
@@ -18,13 +18,13 @@ export async function GET(request) {
 
     await connectDB();
 
-    // Find the verification token
-    const storedToken = await VerificationToken.findOne({
+    // Find the pending user record
+    const pending = await PendingUser.findOne({
       email: email.toLowerCase(),
       token,
     });
 
-    if (!storedToken) {
+    if (!pending) {
       return NextResponse.json(
         { error: "Invalid or expired verification link" },
         { status: 400 }
@@ -32,25 +32,34 @@ export async function GET(request) {
     }
 
     // Check if token is expired
-    if (storedToken.expires < new Date()) {
-      await VerificationToken.deleteOne({ _id: storedToken._id });
+    if (pending.expires < new Date()) {
+      await PendingUser.deleteOne({ _id: pending._id });
       return NextResponse.json(
         { error: "Verification link has expired. Please sign up again." },
         { status: 400 }
       );
     }
 
-    // Update user as verified
-    const user = await User.findOne({ email: email.toLowerCase() });
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    // Check if user was already created (e.g. double-clicked link)
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      // Clean up pending record
+      await PendingUser.deleteOne({ _id: pending._id });
+      return NextResponse.json({
+        message: "Email already verified! You can log in.",
+      });
     }
 
-    user.emailVerified = new Date();
-    await user.save();
+    // NOW create the real user (only on successful verification)
+    const user = await User.create({
+      name: pending.name,
+      email: pending.email,
+      password: pending.password,
+      emailVerified: new Date(),
+    });
 
-    // Delete the used token
-    await VerificationToken.deleteOne({ _id: storedToken._id });
+    // Clean up pending record
+    await PendingUser.deleteOne({ _id: pending._id });
 
     return NextResponse.json({
       message: "Email verified successfully! You can now log in.",
