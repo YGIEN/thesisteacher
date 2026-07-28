@@ -24,22 +24,11 @@ export async function POST(request) {
 
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    // pdf-parse v2 uses PDFParse class
-    const { PDFParse } = await import("pdf-parse");
-    const pdf = new PDFParse(buffer);
+    // pdf-parse v1 - simple and reliable
+    const pdfParse = (await import("pdf-parse")).default;
+    const data = await pdfParse(buffer);
 
-    // Get text from all pages
-    let fullText = "";
-    const totalPages = pdf.getPageLength();
-
-    for (let i = 1; i <= totalPages; i++) {
-      const page = pdf.getPage(i);
-      const textContent = await page.getTextContent();
-      const lines = textContent.items.map((item) => item.str || "");
-      fullText += lines.join(" ") + "\n\n";
-    }
-
-    const text = fullText.trim();
+    const text = data.text?.trim();
 
     if (!text || text.length < 20) {
       return NextResponse.json(
@@ -53,10 +42,10 @@ export async function POST(request) {
 
     return NextResponse.json({
       text,
-      pages: totalPages,
+      pages: data.numpages || 1,
     });
   } catch (error) {
-    console.error("PDF extraction error:", error);
+    console.error("PDF extraction error:", error.message);
     return NextResponse.json(
       {
         error:
