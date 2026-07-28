@@ -2,19 +2,30 @@ import nodemailer from "nodemailer";
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT),
-  secure: false,
+  port: 465,
+  secure: true,
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
+  tls: {
+    rejectUnauthorized: false,
+  },
+});
+
+transporter.verify(function (error, success) {
+  if (error) {
+    console.error("SMTP connection error:", error);
+  } else {
+    console.log("SMTP server is ready to send emails");
+  }
 });
 
 export async function sendVerificationEmail(email, name, token) {
   const baseUrl = process.env.AUTH_URL || "http://localhost:3000";
   const verifyUrl = `${baseUrl}/verify-email?token=${token}&email=${encodeURIComponent(email)}`;
 
-  await transporter.sendMail({
+  const info = await transporter.sendMail({
     from: `"Thesisteacher" <${process.env.SMTP_USER}>`,
     to: email,
     subject: "Verify your email address - Thesisteacher",
@@ -57,4 +68,6 @@ export async function sendVerificationEmail(email, name, token) {
       </div>
     `,
   });
+
+  console.log("Verification email sent:", info.messageId);
 }
