@@ -1,6 +1,5 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import Google from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import { connectDB } from "@/lib/db";
 import User from "@/lib/models/user";
@@ -21,6 +20,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         if (!user || !user.password) {
           throw new Error("Invalid credentials");
+        }
+
+        // Check if email is verified
+        if (!user.emailVerified) {
+          throw new Error(
+            "Please verify your email before signing in. Check your inbox."
+          );
         }
 
         const isValid = await bcrypt.compare(password, user.password);
