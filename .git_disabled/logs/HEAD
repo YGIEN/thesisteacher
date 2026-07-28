@@ -1,0 +1,4 @@
+0000000000000000000000000000000000000000 2fef166facfd3668dbec8ddc1d6089d9b318a0d4 SpotCheck Deployer <spotcheck@example.com> 1785247492 +0900	commit (initial): Initial commit from Create Next App
+2fef166facfd3668dbec8ddc1d6089d9b318a0d4 09c4f2578b5a731bd6a8829eea39e944aab83b7b SpotCheck Deployer <spotcheck@example.com> 1785248818 +0900	commit: Initial commit
+09c4f2578b5a731bd6a8829eea39e944aab83b7b 0000000000000000000000000000000000000000 SpotCheck Deployer <spotcheck@example.com> 1785249060 +0900	Branch: renamed refs/heads/master to refs/heads/main
+0000000000000000000000000000000000000000 09c4f2578b5a731bd6a8829eea39e944aab83b7b SpotCheck Deployer <spotcheck@example.com> 1785249060 +0900	Branch: renamed refs/heads/master to refs/heads/main
